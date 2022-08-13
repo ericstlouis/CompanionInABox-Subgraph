@@ -1,75 +1,33 @@
-import { BigInt } from "@graphprotocol/graph-ts"
-import {
-  cbox,
-  Approval,
-  ApprovalForAll,
-  OwnershipTransferred,
-  Transfer
-} from "../generated/cbox/cbox"
-import { ExampleEntity } from "../generated/schema"
+import { Transfer, cbox  } from "../generated/cbox/cbox";
+/// the transfer event and all the parameters that were emitted with it
+import { Token, User} from '../generated/schema'
+///The token and users types
 
-export function handleApproval(event: Approval): void {
-  // Entities can be loaded from the store using a string ID; this ID
-  // needs to be unique across all entities of the same type
-  let entity = ExampleEntity.load(event.transaction.from.toHex())
+const cBoxURI = "https://companioninabox.art/api/companion/"
 
-  // Entities only exist after they have been saved to the store;
-  // `null` checks allow to create entities on demand
-  if (!entity) {
-    entity = new ExampleEntity(event.transaction.from.toHex())
+///This function will run everytime the transfer event is call in the smartcontract
+export function handleTransfer(event: Transfer): void {
 
-    // Entity fields can be set using simple assignments
-    entity.count = BigInt.fromI32(0)
-  }
+    //constructor of the type Token auto assign tokenId to ID
+    let token = Token.load(event.params.tokenId.toString());
+    if(!token) {
+        token = new Token(event.params.tokenId.toString())
+        token.tokenID = event.params.tokenId;
 
-  // BigInt and BigDecimal math are supported
-  entity.count = entity.count + BigInt.fromI32(1)
+        token.tokenURI = cBoxURI + event.params.tokenId.toString()
+        
+        let metadata = token.tokenURI + ".json"
 
-  // Entity fields can be set based on event parameters
-  entity.owner = event.params.owner
-  entity.approved = event.params.approved
+        token.externalURL = metadata
+    }
 
-  // Entities can be written to the store with `.save()`
-  entity.save()
+    token.owner = event.params.to.toHexString()
+    token.save();
 
-  // Note: If a handler doesn't require existing field values, it is faster
-  // _not_ to load the entity from the store. Instead, create it fresh with
-  // `new Entity(...)`, set the fields that should be updated and save the
-  // entity back to the store. Fields that were not set or unset remain
-  // unchanged, allowing for partial updates to be applied.
-
-  // It is also possible to access smart contracts from mappings. For
-  // example, the contract that has emitted the event can be connected to
-  // with:
-  //
-  // let contract = Contract.bind(event.address)
-  //
-  // The following functions can then be called on this contract to access
-  // state variables and other data:
-  //
-  // - contract.MAX_MULTIMINT(...)
-  // - contract.MAX_SUPPLY(...)
-  // - contract.PRICE(...)
-  // - contract.accessTokenAddress(...)
-  // - contract.accessTokenIsActive(...)
-  // - contract.balanceOf(...)
-  // - contract.getApproved(...)
-  // - contract.isApprovedForAll(...)
-  // - contract.name(...)
-  // - contract.owner(...)
-  // - contract.ownerOf(...)
-  // - contract.royaltyInfo(...)
-  // - contract.saleIsActive(...)
-  // - contract.supportsInterface(...)
-  // - contract.symbol(...)
-  // - contract.tokenByIndex(...)
-  // - contract.tokenOfOwnerByIndex(...)
-  // - contract.tokenURI(...)
-  // - contract.totalSupply(...)
+    //constructor of the type USER auto assign to address to ID
+    let user = User.load(event.params.to.toHexString());
+    if(!user) {
+        user = new User(event.params.to.toHexString());
+        user.save();
+    }
 }
-
-export function handleApprovalForAll(event: ApprovalForAll): void {}
-
-export function handleOwnershipTransferred(event: OwnershipTransferred): void {}
-
-export function handleTransfer(event: Transfer): void {}
